@@ -1,0 +1,13 @@
+port <%= 1883+i %>
+persistence true
+persistence_file mosquitto-timebox<%= i %>.db
+persistence_location <%= File.expand_path(__dir__) %>/tmp/dbs/
+allow_anonymous true
+connection bridge-<%= i %>
+address 127.0.0.1:1883
+topic # out 2
+topic # in 2 to/timebox<%= i %>/ to/timebox<%= i %>/
+bridge_protocol_version mqttv311
+cleansession false
+notifications true
+keepalive_interval 60

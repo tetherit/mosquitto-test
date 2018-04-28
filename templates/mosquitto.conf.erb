@@ -1,0 +1,5 @@
+port 1883
+persistence true
+persistence_file mosquitto-main.db
+persistence_location <%= File.expand_path(__dir__) %>/tmp/dbs/
+allow_anonymous true
