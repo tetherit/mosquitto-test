@@ -2,4 +2,8 @@ port 1883
 persistence true
 persistence_file mosquitto-main.db
 persistence_location <%= File.expand_path(__dir__) %>/tmp/dbs/
-allow_anonymous true
+
+use_username_as_clientid true
+password_file <%= File.expand_path(__dir__) %>/tmp/passwd
+allow_anonymous false
+acl_file <%= File.expand_path(__dir__) %>/templates/acl_file
