@@ -1,7 +1,7 @@
 port <%= 1883+i %>
 persistence true
 persistence_file mosquitto-timebox<%= i %>.db
-persistence_location <%= File.expand_path(__dir__) %>/tmp/dbs/
+persistence_location <%= path %>/tmp/dbs/
 allow_anonymous true
 connection bridge-<%= i %>
 address 127.0.0.1:1883

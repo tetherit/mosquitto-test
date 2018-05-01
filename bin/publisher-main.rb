@@ -4,8 +4,18 @@
 require 'paho-mqtt'
 
 $total = ARGV[0].to_i
+$qos_level = ARGV[1].to_i # 1 or 2
 
-$client = PahoMqtt::Client.new(username: 'testuser', password: 'testpasswd')
+def usage
+  puts "Usage: ./publisher-main.rb TOTAL QOS_LEVEL"
+  puts "    e.g. ./publisher-main.rb 1000 2"
+  exit 1
+end
+
+usage unless [1,2].include?($qos_level)
+usage unless $total > 0
+
+$client = PahoMqtt::Client.new(username: 'testuser', password: 'testpasswd', persistent: true)
 $client.connect('127.0.0.1', 1883)
 
 $count = 0
@@ -18,11 +28,13 @@ def send_message
   # puts "Publishing topic: #{topic} msg: #{msg}"
 
   # mosquitto_pub -p 1883 -q 2 -u testuser -P testpasswd -t 'to/timebox1/cameras' -m "message for timebox1"
-  $client.publish(topic, msg, true, 2)
+  $client.publish(topic, msg, true, $qos_level)
 end
 
-$client.on_pubcomp do
-  send_message
+if $qos_level == 1
+  $client.on_puback { send_message }
+elsif $qos_level == 2
+  $client.on_pubcomp { send_message }
 end
 send_message
 

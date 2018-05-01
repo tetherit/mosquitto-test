@@ -1,8 +1,7 @@
 # Superuser
-# user testuser
-# topic readwrite #
+user testuser
+topic readwrite #
 
-#
-# # Everyone else
-# pattern write from/%u/
-# pattern read to/%u/
+# Everyone else
+pattern write from/%u/#
+pattern read to/%u/#
