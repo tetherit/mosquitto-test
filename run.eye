@@ -2,13 +2,25 @@ require 'erb'
 require 'fileutils'
 
 # Seems Mac stops allowing any additional forks around 1000 processes
-MOSQUITTO_PROCESSES = 1000
+MOSQUITTO_PROCESSES = 100
 PUBLISHERS = 1
 QOS_LEVEL = 1
 
 # Set this to where your source code is, for some reason eye won't respect
 # File.expand_path(__dir__) or File.dirname(__FILE__)
 $pwd = '/Users/hackeron/Development/Xanview/mosquitto-test'
+
+def system_(cmd, error)
+  fail "Can't set username/password for TimeBox:\n\t#{cmd}" unless
+    system(cmd)
+end
+
+# Create paths
+['tmp/etc', 'tmp/pid', 'log'].each do |path|
+  unless File.directory?(File.join($pwd, path))
+    FileUtils.mkdir File.join($pwd, path)
+  end
+end
 
 Eye.load("#{$pwd}/eye/*.rb")
 Eye.config do
@@ -31,8 +43,10 @@ def mosquitto_group(i)
   FileUtils.rm(db_path) if File.exist?(db_path)
 
   # Ensure username/password are present
-  fail "Can't set username/password for TimeBox" unless \
-    system("mosquitto_passwd -b #{$pwd}/tmp/passwd timebox#{i} password#{i}")
+  system_(
+    "mosquitto_passwd -b #{$pwd}/tmp/passwd timebox#{i} password#{i}",
+    "Can't set username/password for TimeBox"
+  )
 
   process :timebox_mosquitto do
     render_template(
@@ -57,15 +71,19 @@ Eye.application 'mosquitto_test' do
   # Kill all previous processes, just in case
   system("bash bin/kill.sh")
 
+  # Remove all DBs to avoid any state conflicts and old confirms/etc
+  system("rm -f #{$pwd}/tmp/dbs/*")
+
   # Increase the file/process limits to run this test
   system('sudo ulimit -u 283700 -n 98304')
 
   # Create passwd file for main mosquitto thread
-  fail "Can't touch passwd file" unless \
-    system("touch tmp/passwd")
+  system_("touch #{$pwd}/tmp/passwd", "Can't touch passwd file")
 
-  fail "Can't set username/password" unless \
-    system("mosquitto_passwd -b #{$pwd}/tmp/passwd testuser testpasswd")
+  system_(
+    "mosquitto_passwd -b #{$pwd}/tmp/passwd testuser testpasswd",
+    "Can't set username/password"
+  )
 
   group "mosquitto_main" do
     chain grace: 2.seconds # chained start-restart with 1s interval, one by one.
@@ -81,17 +99,17 @@ Eye.application 'mosquitto_test' do
       defaults(0, 'subscriber')
     end
 
-    process :publisher_main do
-      start_command "./bin/publisher-main.rb #{MOSQUITTO_PROCESSES} #{QOS_LEVEL}"
-      defaults(0, 'publisher')
-    end
+    # process :publisher_main do
+    #   start_command "./bin/publisher-main.rb #{MOSQUITTO_PROCESSES} #{QOS_LEVEL}"
+    #   defaults(0, 'publisher')
+    # end
 
-    (1..PUBLISHERS).each do |i|
-      process "publisher_#{i}" do
-        start_command "./bin/publisher.rb #{MOSQUITTO_PROCESSES} #{QOS_LEVEL}"
-        defaults(i, 'publisher')
-      end
-    end
+    # (1..PUBLISHERS).each do |i|
+    #   process "publisher_#{i}" do
+    #     start_command "./bin/publisher.rb #{MOSQUITTO_PROCESSES} #{QOS_LEVEL}"
+    #     defaults(i, 'publisher')
+    #   end
+    # end
   end
 
   (1..MOSQUITTO_PROCESSES).each do |i|

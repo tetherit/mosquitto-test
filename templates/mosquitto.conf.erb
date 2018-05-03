@@ -3,7 +3,7 @@ persistence true
 persistence_file mosquitto-main.db
 persistence_location <%= path %>/tmp/dbs/
 
-use_username_as_clientid true
+# use_username_as_clientid true
 password_file <%= path %>/tmp/passwd
 allow_anonymous false
 acl_file <%= path %>/templates/acl_file

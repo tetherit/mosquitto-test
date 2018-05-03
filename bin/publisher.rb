@@ -16,13 +16,13 @@ usage unless [1,2].include?($qos_level)
 usage unless $total > 0
 
 
-# Performance becomes terrible spinning up too many threads in ruby,
-# force 250 running threads:
-if $total <= 250
+# Performance is terrible with many threads, need to investigate using something
+# other than Paho. For now limit to 2 threads in favour of more processes.
+if $total <= 2
   threads = (1..$total).entries
 else
   threads = (1..$total).entries.shuffle
-  threads = threads[0...250]
+  threads = threads[0...2]
 end
 
 $threads = {}
@@ -31,10 +31,11 @@ $count = 0
 # Create connection threads
 threads.each do |i|
   begin
-    client = PahoMqtt::Client.new(persistent: true)
+    client_id = "client_#{(rand*1_000_000_000).to_i}"
+    client = PahoMqtt::Client.new(persistent: true, client_id: client_id)
     client.connect('127.0.0.1', 1883+i)
     $threads[i] = client
-    puts "*** Connected to broker: #{i}"
+    puts "*** Connected to broker: #{i} (#{client_id})"
   rescue
     puts "!!! Failed to connect to broker #{i}"
   end
@@ -55,7 +56,7 @@ end
 threads.each do |i|
   return unless $threads.key?(i)
   if $qos_level == 1
-    $threads[i].on_pubback { send_message(i) }
+    $threads[i].on_puback { send_message(i) }
   elsif $qos_level == 2
     $threads[i].on_pubcomp { send_message(i) }
   end

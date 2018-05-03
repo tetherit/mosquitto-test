@@ -15,7 +15,10 @@ end
 usage unless [1,2].include?($qos_level)
 usage unless $total > 0
 
-$client = PahoMqtt::Client.new(username: 'testuser', password: 'testpasswd', persistent: true)
+client_id = "client_#{(rand*1_000_000).to_i}"
+puts "Client ID: #{client_id}"
+
+$client = PahoMqtt::Client.new(username: 'testuser', password: 'testpasswd', client_id: client_id)
 $client.connect('127.0.0.1', 1883)
 
 $count = 0
@@ -32,9 +35,9 @@ def send_message
 end
 
 if $qos_level == 1
-  $client.on_puback { send_message }
+  $client.on_puback { send_message } # QOS1
 elsif $qos_level == 2
-  $client.on_pubcomp { send_message }
+  $client.on_pubcomp { send_message } # QOS2
 end
 send_message
 
